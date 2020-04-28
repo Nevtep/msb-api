@@ -1,3 +1,23 @@
-type Query {
-  helloWorld: String!
-}
+
+
+  type User {
+    id: ID
+    firstName: String
+    lastName: String
+    email: String
+  }
+
+   type AuthPayload {
+    user: User
+  }
+
+  type Query {
+    currentUser: User
+    helloWorld: String!
+  }
+
+  type Mutation {
+    logout: Boolean
+    login(email: String!, password: String!): AuthPayload
+    signup(firstName: String!, lastName: String!, email: String!, password: String!): AuthPayload
+  }
