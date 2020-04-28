@@ -1,13 +1,12 @@
 import express from 'express';
 import session from 'express-session';
 import { v4 as uuid } from 'uuid';
-import passport, { AuthenticateOptions } from 'passport';
+import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { GraphQLLocalStrategy, buildContext } from 'graphql-passport';
 import UserAPI, { User } from './datasources/User';
 import { ApolloServer } from 'apollo-server-express';
 import depthLimit from 'graphql-depth-limit';
-import { createServer } from 'http';
 import compression from 'compression';
 import cors from 'cors';
 import schema from './schema';
