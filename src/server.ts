@@ -11,20 +11,14 @@ import compression from 'compression';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
 import schema from './schema';
-import { createStore, UserModel } from './utils';
+import store, { UserModel } from './datasources/models';
 
-export interface APIContext {
-
-}
-
-const store = createStore();
 const getDataSources = () => ({
   usersAPI: new UserAPI({ store }),
 });
 
 passport.use(
   new GraphQLLocalStrategy((email: unknown, password: unknown, done: (error: Error | null, user?: any) => void) => {
-    console.log('authentincate:', email, 'with', password)
     getDataSources().usersAPI.findOne({ email: email as string }).then((user) => {
       if(!user) {
         return done(new Error('no matching user'))
