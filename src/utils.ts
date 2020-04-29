@@ -1,47 +1,50 @@
-import passport, { AuthenticateOptions } from 'passport';
-import express from 'express';
+import { Sequelize, DATE, INTEGER, STRING, Model, BuildOptions } from 'sequelize';
 
-export interface IVerifyOptions {
-    info: boolean;
-    message?: string;
-  }
-  
-  export interface AuthenticateReturn<UserObjectType extends {}> {
-    user: UserObjectType | undefined;
-    info: IVerifyOptions | undefined;
-  }
+// We need to declare an interface for our model that is basically what our class would be
+export interface UserModel extends Model {
+  readonly id: number;
+  readonly email: string;
+  readonly fullName: string;
+  readonly password: string;
+}
 
-export const promisifiedAuthentication = <UserObjectType extends {}>(
-    req: express.Request,
-    res: express.Response,
-    name: string,
-    options: AuthenticateOptions,
-  ) => {
-    const p = new Promise<AuthenticateReturn<UserObjectType>>((resolve, reject) => {
-      const done = (err: Error | undefined, user: UserObjectType | undefined, info?: IVerifyOptions | undefined) => {
-          console.log('auth done', { user, info })
-        if (err) reject(err);
-        else resolve({ user, info });
-      };
-  
-      const authFn = passport.authenticate(name, options, done);
-      console.log('call passport with:', name)
-      return authFn(req, res);
-    });
-  
-    return p;
-  };
-  
- export const promisifiedLogin = <UserObjectType extends {}>(
-    req: express.Request,
-    user: UserObjectType,
-    options?: AuthenticateOptions,
-  ) =>
-    new Promise<void>((resolve, reject) => {
-      const done = (err: Error | undefined) => {
-        if (err) reject(err);
-        else resolve();
-      };
-  
-      req.login(user, options, done);
-    });
+// Need to declare the static model so `findOne` etc. use correct types.
+export type UserModelStatic = typeof Model & {
+  new (values?: object, options?: BuildOptions): UserModel;
+}
+
+export type MSBStore = {
+  db: Sequelize,
+  users: UserModelStatic,
+  subscriptions: typeof Model,
+}
+
+export const createStore = () => {
+  const db = new Sequelize(process.env.DATABASE_URL!, {
+    dialect: 'postgres',
+    protocol: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false // <<<<<<< YOU NEED THIS
+      }
+    },
+  })
+
+  const users = <UserModelStatic>db.define('user', {
+    createdAt: DATE,
+    updatedAt: DATE,
+    email: STRING,
+    fullName: STRING,
+    password: STRING,
+  });
+
+  const subscriptions = db.define('subscription', {
+    createdAt: DATE,
+    updatedAt: DATE,
+    launchId: INTEGER,
+    userId: INTEGER,
+  });
+
+  return { db, users, subscriptions };
+};

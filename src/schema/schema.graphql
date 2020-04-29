@@ -2,8 +2,7 @@
 
   type User {
     id: ID
-    firstName: String
-    lastName: String
+    fullName: String
     email: String
   }
 
@@ -19,5 +18,5 @@
   type Mutation {
     logout: Boolean
     login(email: String!, password: String!): AuthPayload
-    signup(firstName: String!, lastName: String!, email: String!, password: String!): AuthPayload
+    signup(fullName: String!, email: String!, password: String!): AuthPayload
   }

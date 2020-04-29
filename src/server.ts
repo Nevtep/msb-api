@@ -4,49 +4,82 @@ import { v4 as uuid } from 'uuid';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { GraphQLLocalStrategy, buildContext } from 'graphql-passport';
-import UserAPI, { User } from './datasources/User';
+import UserAPI from './datasources/User';
 import { ApolloServer } from 'apollo-server-express';
 import depthLimit from 'graphql-depth-limit';
 import compression from 'compression';
 import cors from 'cors';
+import bcrypt from 'bcrypt';
 import schema from './schema';
+import { createStore, UserModel } from './utils';
+
+export interface APIContext {
+
+}
+
+const store = createStore();
+const getDataSources = () => ({
+  usersAPI: new UserAPI({ store }),
+});
 
 passport.use(
-  new GraphQLLocalStrategy((email: unknown, password: unknown, done: (error: Error | null, user?: User) => void) => {
-    const users = UserAPI.getUsers();
-    const matchingUser = users.find(user => email === user.email && password === user.password);
-    const error = matchingUser ? null : new Error('no matching user');
-    done(error, matchingUser);
+  new GraphQLLocalStrategy((email: unknown, password: unknown, done: (error: Error | null, user?: any) => void) => {
+    console.log('authentincate:', email, 'with', password)
+    getDataSources().usersAPI.findOne({ email: email as string }).then((user) => {
+      if(!user) {
+        return done(new Error('no matching user'))
+      }
+      console.log('user', user)
+      bcrypt.compare(password, user.dataValues.password, (err, match) => {
+        if(err) {
+          return done(err);
+        }
+        if(match) {
+          return done(null, user);
+        } else {
+          return done(null, false)
+        }
+      })
+    });
   })
 );
 
 passport.use(new LocalStrategy(
     function(email, password, done) {
-      UserAPI.findOne({ email }, function (err, user) {
-        if (err) { return done(err); }
-        if (!user) { return done(null, false); }
-        if (!(user.password == password)) { return done(null, false); }
-        return done(null, user);
+      getDataSources().usersAPI.findOne({ email: email as string }).then((user) => {
+        if(!user) {
+          return done(new Error('no matching user'))
+        }
+        bcrypt.compare(password, user.password, (err, match) => {
+          if(err) {
+            return done(err);
+          }
+          if(match) {
+            return done(null, user);
+          } else {
+            return done(null, false)
+          }
+        })
       });
     }
   ));
 
-passport.serializeUser((user: User, done) => {
-    done(null, user.id);
+passport.serializeUser((user: UserModel, done) => {
+    done(null, user.email);
 });
   
-passport.deserializeUser((id, done) => {
-    const users = UserAPI.getUsers();
-    const matchingUser = users.find(user => user.id === id);
-    done(null, matchingUser);
+passport.deserializeUser((email, done) => {
+  getDataSources().usersAPI.findOne({ email: email as string }).then(user => {
+    done(null, user);
+  });
 });
 
-  
 const app = express();
 const server = new ApolloServer({
   schema,
   validationRules: [depthLimit(7)],
-  context: ({ req, res }) => buildContext({ req, res, UserAPI }),
+  dataSources: getDataSources,
+  context: ({ req, res }) => buildContext({ req, res }),
 });
 app.use('*', cors());
 app.use(compression());
