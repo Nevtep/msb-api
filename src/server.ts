@@ -75,15 +75,10 @@ const server = new ApolloServer({
   context: ({ req, res }) => buildContext({ req, res }),
 });
 const corsOptions = {
-  origin: '*',
+  origin: process.env.ALLOWED_ORIGIN,
   credentials: true,
-  preflightContinue: true
 };
-app.options('*', cors({
-  origin: '*',
-  credentials: true,
-  preflightContinue: true
-}))
+
 app.use(cors(corsOptions));
 app.use(compression());
 app.use(session({
@@ -95,13 +90,14 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.options('*', cors(corsOptions))
 app.post('/login',
   passport.authenticate('local', { successRedirect: '/',
                                    failureRedirect: '/login',
                                    failureFlash: true })
 );
 
-server.applyMiddleware({ app, path: '/graphql', cors: corsOptions });
+server.applyMiddleware({ app, path: '/graphql', cors: false });
 
 app.listen(
   { port: process.env.PORT },
