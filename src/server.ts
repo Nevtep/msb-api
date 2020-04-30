@@ -23,7 +23,6 @@ passport.use(
       if(!user) {
         return done(new Error('no matching user'))
       }
-      console.log('user', user)
       bcrypt.compare(password, user.dataValues.password, (err, match) => {
         if(err) {
           return done(err);
@@ -75,7 +74,11 @@ const server = new ApolloServer({
   dataSources: getDataSources,
   context: ({ req, res }) => buildContext({ req, res }),
 });
-app.use('*', cors());
+const corsOptions = {
+  origin: ['http://localhost:8000', 'https://maxima-senales-binarias.now.sh/'],
+  credentials: true,
+};
+app.use(cors(corsOptions));
 app.use(compression());
 app.use(session({
     genid: () => uuid(),
@@ -92,7 +95,7 @@ app.post('/login',
                                    failureFlash: true })
 );
 
-server.applyMiddleware({ app, path: '/graphql' });
+server.applyMiddleware({ app, path: '/graphql', cors: false });
 
 app.listen(
   { port: process.env.PORT },
