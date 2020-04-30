@@ -75,7 +75,7 @@ const server = new ApolloServer({
   context: ({ req, res }) => buildContext({ req, res }),
 });
 const corsOptions = {
-  origin: ['http://localhost:8000', 'https://maxima-senales-binarias.now.sh/'],
+  origin: '*',
   credentials: true,
 };
 app.options('*', cors())
