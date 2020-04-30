@@ -8,7 +8,7 @@ import UserAPI from './datasources/User';
 import { ApolloServer } from 'apollo-server-express';
 import depthLimit from 'graphql-depth-limit';
 import compression from 'compression';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import bcrypt from 'bcrypt';
 import schema from './schema';
 import store, { UserModel } from './datasources/models';
@@ -74,7 +74,7 @@ const server = new ApolloServer({
   dataSources: getDataSources,
   context: ({ req, res }) => buildContext({ req, res }),
 });
-const corsOptions = {
+const corsOptions: CorsOptions = {
   origin: process.env.ALLOWED_ORIGIN,
   credentials: true,
 };
@@ -90,7 +90,7 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
-app.options('*', cors(corsOptions))
+app.options('/graphql', cors(corsOptions))
 app.post('/login',
   passport.authenticate('local', { successRedirect: '/',
                                    failureRedirect: '/login',

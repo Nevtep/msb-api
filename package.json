@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "start": "node 'dist/server.js'",
-    "build": "tsc -p . && ncp src/schema dist/schema",
+    "build": "tsc -p . && ncp src/schema dist/schema && ncp src/datasources/models dist/datasources/models",
     "db:migrate": "cd src/datasources && NODE_TLS_REJECT_UNAUTHORIZED=0 npx sequelize-cli db:migrate",
     "start:dev": "npm run build:dev",
     "build:dev": "nodemon -r dotenv/config 'src/server.ts' --exec 'ts-node' src/server.ts -e ts,graphql"
