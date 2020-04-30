@@ -79,7 +79,11 @@ const corsOptions = {
   credentials: true,
 };
 app.options('*', cors())
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: '*',
+  credentials: true,
+  preflightContinue: true
+}));
 app.use(compression());
 app.use(session({
     genid: () => uuid(),
