@@ -96,7 +96,7 @@ app.post('/login',
                                    failureFlash: true })
 );
 
-server.applyMiddleware({ app, path: '/graphql', cors: false });
+server.applyMiddleware({ app, path: '/graphql' });
 
 app.listen(
   { port: process.env.PORT },
