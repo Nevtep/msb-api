@@ -78,6 +78,7 @@ const corsOptions = {
   origin: ['http://localhost:8000', 'https://maxima-senales-binarias.now.sh/'],
   credentials: true,
 };
+app.options('*', cors())
 app.use(cors(corsOptions));
 app.use(compression());
 app.use(session({
