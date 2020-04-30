@@ -77,13 +77,14 @@ const server = new ApolloServer({
 const corsOptions = {
   origin: '*',
   credentials: true,
+  preflightContinue: true
 };
-app.options('*', cors())
-app.use(cors({
+app.options('*', cors({
   origin: '*',
   credentials: true,
   preflightContinue: true
-}));
+}))
+app.use(cors(corsOptions));
 app.use(compression());
 app.use(session({
     genid: () => uuid(),
@@ -100,7 +101,7 @@ app.post('/login',
                                    failureFlash: true })
 );
 
-server.applyMiddleware({ app, path: '/graphql' });
+server.applyMiddleware({ app, path: '/graphql', cors: corsOptions });
 
 app.listen(
   { port: process.env.PORT },
