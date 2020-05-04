@@ -62,7 +62,7 @@ passport.use(new LocalStrategy(
   const facebookOptions: FacebookStrategyOption = {
     clientID: process.env.FACEBOOK_CLIENT_ID!,
     clientSecret: process.env.FACEBOOK_APP_SECRET!,
-    callbackURL: `http://localhost:${process.env.PORT}/auth/facebook/callback`,
+    callbackURL: process.env.FACEBOOK_CALLBACK_URL!,
     profileFields: ['id', 'email', 'first_name', 'last_name'],
   };
 
@@ -131,8 +131,8 @@ app.post('/login',
 );
 app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
 app.get('/auth/facebook/callback', passport.authenticate('facebook', {
-  successRedirect: `http://localhost:8000/app`,
-  failureRedirect: `http://localhost:8000/login`,
+  successRedirect: `${process.env.STATIC_APP_URL!}/app`,
+  failureRedirect: `${process.env.STATIC_APP_URL!}/login`,
 }));
 
 server.applyMiddleware({ app, path: '/graphql', cors: false });
