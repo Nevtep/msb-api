@@ -22,7 +22,7 @@ const resolverMap: IResolvers = {
         const userWithEmailAlreadyExists = !!existingUsers.find((user: any) => user.dataValues.email === email);
   
         if (userWithEmailAlreadyExists) {
-          throw new Error('User with email already exists');
+          throw new Error('Ya existe un usuario con ese Email registrado.');
         }
   
         const newUser = {

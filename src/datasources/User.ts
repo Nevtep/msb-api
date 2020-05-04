@@ -1,9 +1,14 @@
 import isEmail from 'isemail';
 import { DataSource, DataSourceConfig } from 'apollo-datasource';
 import { MSBStore, UserModel } from './models';
+import { WhereAttributeHash } from 'sequelize/types';
 
 export interface UserAPIArguments {
   store: MSBStore
+}
+
+export interface UserModelQuery extends Partial<UserModel> {
+  [index: string]: any;
 }
 
 class UserAPI extends DataSource {
@@ -44,17 +49,20 @@ class UserAPI extends DataSource {
    * have to be. If the user is already on the context, it will use that user
    * instead
    */
-  async findOne(fields: Partial<UserModel> = {}): Promise<any> {
-    const query =
-      this.context && this.context.user ? { id: this.context.user.id } : { email: fields.email! };
-    return await this.store.User.findOne({ where: { email: fields.email! } });
+  async findOne(fields: UserModelQuery = {}): Promise<any> {
+    let query: WhereAttributeHash = {};
+    for(let key of Object.keys(fields)) {
+      query[key] = fields[key];
+    }
+
+    return await this.store.User.findOne({ where: { ...query } });
   }
 
   async getUsers(): Promise<UserModel[]> {
     return await this.store.User.findAll();
   }
 
-  async addUser(user: UserModel) {
+  async addUser(user: Partial<UserModel>) {
     await this.store.User.create(user);
   }
 }

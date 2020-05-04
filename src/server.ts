@@ -12,6 +12,7 @@ import cors, { CorsOptions } from 'cors';
 import bcrypt from 'bcrypt';
 import schema from './schema';
 import store, { UserModel } from './datasources/models';
+import { Strategy as FacebookStrategy, StrategyOption as FacebookStrategyOption, VerifyFunction as FacebookVerifyFunction } from 'passport-facebook';
 
 const getDataSources = () => ({
   usersAPI: new UserAPI({ store }),
@@ -21,16 +22,17 @@ passport.use(
   new GraphQLLocalStrategy((email: unknown, password: unknown, done: (error: Error | null, user?: any) => void) => {
     getDataSources().usersAPI.findOne({ email: email as string }).then((user) => {
       if(!user) {
-        return done(new Error('no matching user'))
+        return done(new Error('Usuario o password no válidos'))
       }
       bcrypt.compare(password, user.dataValues.password, (err, match) => {
         if(err) {
+          console.log('error: %o', err);
           return done(err);
         }
         if(match) {
           return done(null, user);
         } else {
-          return done(null, false)
+          return done(new Error('Usuario o password no válidos'), false)
         }
       })
     });
@@ -56,6 +58,37 @@ passport.use(new LocalStrategy(
       });
     }
   ));
+
+  const facebookOptions: FacebookStrategyOption = {
+    clientID: process.env.FACEBOOK_CLIENT_ID!,
+    clientSecret: process.env.FACEBOOK_APP_SECRET!,
+    callbackURL: `http://localhost:${process.env.PORT}/auth/facebook/callback`,
+    profileFields: ['id', 'email', 'first_name', 'last_name'],
+  };
+
+  const facebookCallback: FacebookVerifyFunction = (accessToken, refreshToken, profile, done) => {
+    const { usersAPI } = getDataSources();
+    usersAPI.findOne({ facebookId: profile.id as string }).then((user) => {
+      if(!user) {
+        const newUser = {
+          id: uuid(),
+          facebookId: profile.id,
+          fullName: `${profile?.name?.givenName} ${profile?.name?.familyName}`,
+          email: profile.emails && profile.emails[0] && profile.emails[0].value || '',
+        };
+        usersAPI.addUser(newUser);
+        done(null, newUser);
+      }
+      done(null, user);
+      return;
+    });
+  };
+
+  passport.use(new FacebookStrategy(
+    facebookOptions,
+    facebookCallback,
+  ));
+  
 
 passport.serializeUser((user: UserModel, done) => {
     done(null, user.email);
@@ -96,6 +129,11 @@ app.post('/login',
                                    failureRedirect: '/login',
                                    failureFlash: true })
 );
+app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+app.get('/auth/facebook/callback', passport.authenticate('facebook', {
+  successRedirect: `http://localhost:8000/app`,
+  failureRedirect: `http://localhost:8000/login`,
+}));
 
 server.applyMiddleware({ app, path: '/graphql', cors: false });
 
