@@ -123,7 +123,9 @@ const corsOptions: CorsOptions = {
 app.use(cors(corsOptions));
 app.use(compression());
 app.use(session({
-  store: new redisStore(redisClient),
+  store: new redisStore({
+    client: redisClient
+  }),
     genid: () => uuid(),
     secret: process.env.SESSION_SECRET!,
     cookie: process.env.NODE_ENV == 'production' ? { secure: true, domain: 'maximasenalesbinarias.com' } : undefined,
