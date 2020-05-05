@@ -130,7 +130,7 @@ app.use(session({
   }),
     genid: () => uuid(),
     secret: process.env.SESSION_SECRET!,
-    cookie: process.env.NODE_ENV == 'production' ? { secure: true } : undefined,
+    cookie: process.env.NODE_ENV == 'production' ? { domain: 'maximasenalesbinarias.com' } : undefined,
     resave: false,
     saveUninitialized: false,
 }));
@@ -147,12 +147,6 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {
   successRedirect: `${process.env.STATIC_APP_URL!}/app`,
   failureRedirect: `${process.env.STATIC_APP_URL!}/login`,
 }));
-
-app.get('/health-check', (req, res) => res.sendStatus(200));
-
-app.get('/.well-known/acme-challenge/:id', function(req, res, next) {
-  res.send(req.params.id+'.'+'rQb1XQDNLYGL8OIpF-ihuRds006gMyS20OEe1ADvOg0');
-});
 
 server.applyMiddleware({ app, path: '/graphql', cors: false });
 
