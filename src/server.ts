@@ -14,6 +14,10 @@ import schema from './schema';
 import store, { UserModel } from './datasources/models';
 import { Strategy as FacebookStrategy, StrategyOption as FacebookStrategyOption, VerifyFunction as FacebookVerifyFunction } from 'passport-facebook';
 
+import connectRedis from 'connect-redis';
+
+const redisStore = connectRedis(session);
+
 const getDataSources = () => ({
   usersAPI: new UserAPI({ store }),
 });
@@ -68,7 +72,7 @@ passport.use(new LocalStrategy(
 
   const facebookCallback: FacebookVerifyFunction = (accessToken, refreshToken, profile, done) => {
     const { usersAPI } = getDataSources();
-    usersAPI.findOne({ facebookId: profile.id as string }).then((user) => {
+    usersAPI.findOne({ email: profile.emails && profile.emails[0] && profile.emails[0].value as string }).then((user) => {
       if(!user) {
         const newUser = {
           id: uuid(),
@@ -78,6 +82,8 @@ passport.use(new LocalStrategy(
         };
         usersAPI.addUser(newUser);
         done(null, newUser);
+      } else {
+        // update user with fb id
       }
       done(null, user);
       return;
@@ -115,9 +121,10 @@ const corsOptions: CorsOptions = {
 app.use(cors(corsOptions));
 app.use(compression());
 app.use(session({
+  store: new redisStore({ url: process.env.REDIS_URL }),
     genid: () => uuid(),
     secret: process.env.SESSION_SECRET!,
-    cookie: process.env.NODE_ENV == 'production' ? { secure: true } : undefined,
+    cookie: process.env.NODE_ENV == 'production' ? { secure: true, domain: 'maximasenalesbinarias.com' } : undefined,
     resave: false,
     saveUninitialized: false,
 }));
