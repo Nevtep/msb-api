@@ -130,7 +130,7 @@ app.use(session({
   }),
     genid: () => uuid(),
     secret: process.env.SESSION_SECRET!,
-    cookie: process.env.NODE_ENV == 'production' ? { secure: true, domain: 'maximasenalesbinarias.com' } : undefined,
+    cookie: process.env.NODE_ENV == 'production' ? { secure: true } : undefined,
     resave: false,
     saveUninitialized: false,
 }));
