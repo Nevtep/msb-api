@@ -114,7 +114,6 @@ const corsOptions: CorsOptions = {
 
 app.use(cors(corsOptions));
 app.use(compression());
-app.use(express.static('static'));
 app.use(session({
     genid: () => uuid(),
     secret: process.env.SESSION_SECRET!,
@@ -139,7 +138,7 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {
 app.get('/health-check', (req, res) => res.sendStatus(200));
 
 app.get('/.well-known/acme-challenge/:id', function(req, res, next) {
-  res.send(req.params.id+'.'+'cert_UGB2AYQRTeTGToTUT4VTNjtS');
+  res.send(req.params.id+'.'+'rQb1XQDNLYGL8OIpF-ihuRds006gMyS20OEe1ADvOg0');
 });
 
 server.applyMiddleware({ app, path: '/graphql', cors: false });
