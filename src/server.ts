@@ -135,6 +135,8 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {
   failureRedirect: `${process.env.STATIC_APP_URL!}/login`,
 }));
 
+app.get('/health-check', (req, res) => res.sendStatus(200));
+
 server.applyMiddleware({ app, path: '/graphql', cors: false });
 
 app.listen(
