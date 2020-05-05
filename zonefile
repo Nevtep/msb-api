@@ -1,0 +1,4 @@
+$ORIGIN maximasenalesbinarias.com.
+_now                   3600 TXT   "XjstE7rFJi"
+www                   43200 CNAME maximasenalesbinarias.com.
+api                   43200 CNAME warm-cliffs-fju23pm7tk52fxxsxv5miu82.herokudns.com.

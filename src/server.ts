@@ -138,6 +138,10 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {
 
 app.get('/health-check', (req, res) => res.sendStatus(200));
 
+app.get('/.well-known/acme-challenge/:id', function(req, res, next) {
+  res.send(req.params.id+'.'+'cert_UGB2AYQRTeTGToTUT4VTNjtS');
+});
+
 server.applyMiddleware({ app, path: '/graphql', cors: false });
 
 app.listen(
