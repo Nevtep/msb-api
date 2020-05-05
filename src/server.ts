@@ -13,11 +13,13 @@ import bcrypt from 'bcrypt';
 import schema from './schema';
 import store, { UserModel } from './datasources/models';
 import { Strategy as FacebookStrategy, StrategyOption as FacebookStrategyOption, VerifyFunction as FacebookVerifyFunction } from 'passport-facebook';
-
+import redis from 'redis';
 import connectRedis from 'connect-redis';
 
 const redisStore = connectRedis(session);
-
+const redisClient = redis.createClient({
+  url: process.env.REDIS_URL
+})
 const getDataSources = () => ({
   usersAPI: new UserAPI({ store }),
 });
@@ -121,7 +123,7 @@ const corsOptions: CorsOptions = {
 app.use(cors(corsOptions));
 app.use(compression());
 app.use(session({
-  store: new redisStore({ url: process.env.REDIS_URL }),
+  store: new redisStore(redisClient),
     genid: () => uuid(),
     secret: process.env.SESSION_SECRET!,
     cookie: process.env.NODE_ENV == 'production' ? { secure: true, domain: 'maximasenalesbinarias.com' } : undefined,
