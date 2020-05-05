@@ -114,6 +114,7 @@ const corsOptions: CorsOptions = {
 
 app.use(cors(corsOptions));
 app.use(compression());
+app.use(express.static('static'));
 app.use(session({
     genid: () => uuid(),
     secret: process.env.SESSION_SECRET!,
