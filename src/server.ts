@@ -99,10 +99,12 @@ passport.use(new LocalStrategy(
   
 
 passport.serializeUser((user: UserModel, done) => {
+  console.log('user:', user)
     done(null, user.email);
 });
   
 passport.deserializeUser((email, done) => {
+  console.log('email', email)
   getDataSources().usersAPI.findOne({ email: email as string }).then(user => {
     done(null, user);
   });
