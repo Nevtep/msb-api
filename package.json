@@ -9,17 +9,21 @@
   "private": true,
   "scripts": {
     "start": "node 'dist/server.js'",
+    "debug": "node -r ts-node/register -r dotenv/config --inspect-brk 'src/server.ts' src/server.ts",
     "build": "tsc -p . && ncp src/schema dist/schema && ncp src/datasources/models dist/datasources/models",
     "db:migrate": "cd src/datasources && NODE_TLS_REJECT_UNAUTHORIZED=0 npx sequelize-cli db:migrate",
     "start:dev": "npm run build:dev",
-    "build:dev": "nodemon -r dotenv/config 'src/server.ts' --exec 'ts-node' src/server.ts -e ts,graphql"
+    "build:dev": "nodemon -r dotenv/config 'src/server.ts' --exec 'ts-node' src/server.ts -e ts,graphql",
+    "redis": "docker run --name redis -p 6379:6379 -d redis"
   },
   "dependencies": {
+    "apollo-server": "^2.15.0",
     "apollo-server-express": "^2.12.0",
     "bcrypt": "^4.0.1",
     "compression": "^1.7.4",
     "connect-redis": "^4.0.4",
     "cors": "^2.8.5",
+    "csv-parser": "^2.3.3",
     "express": "^4.17.1",
     "express-session": "^1.17.1",
     "graphql": "^15.0.0",

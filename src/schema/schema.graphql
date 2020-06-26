@@ -1,22 +1,86 @@
-
+  scalar Timestamp
+  scalar Upload
+  scalar Date
 
   type User {
     id: ID
     fullName: String
     email: String
+    services: [Service] 
+  }
+
+  type Service {
+    id: ID
+    role: ID
+    startDate: Date
+    endDate: Date
+    invoice: ID
+  }
+
+  type Role {
+    id: ID
+    name: String
+  }
+
+  # A signal to buy or sell a Pair on a specific time
+  type Signal {
+    id: ID
+    time: Timestamp
+    pair: String
+    op: OperationType
+  }
+
+  type Message {
+    text: String!
+    user: User
   }
 
    type AuthPayload {
     user: User
   }
 
+  type Subscription {
+    vipSignal: Signal
+    vipMessage: Message
+  }
+
   type Query {
     currentUser: User
-    helloWorld: String!
+    signals: [Signal]
+    users: [User]
+    roles: [Role]
   }
 
   type Mutation {
     logout: Boolean
     login(email: String!, password: String!): AuthPayload
     signup(fullName: String!, email: String!, password: String!): AuthPayload
+    addRole(roleId: ID, userId: ID): User
+    removeRole(id: ID): ID
+    setUser(user: UserInput): User
+    deleteUser(id: ID): ID
+    addSignal(time: Timestamp!, pair: String!, op: OperationType!): Signal
+    removeSignal(id: ID): ID
+    uploadSignals(file: Upload!): [Signal]
+    sendMessage(text: String): Message
+  }
+
+  enum OperationType {
+    CALL
+    PUT
+  }
+
+  input UserInput {
+    id: String
+    fullName: String
+    email: String
+    services: [ServiceInput] 
+  }
+
+  input ServiceInput {
+    id: String
+    role: ID
+    startDate: Date
+    endDate: Date
+    invoice: ID
   }

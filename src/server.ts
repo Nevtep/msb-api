@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import { v4 as uuid } from 'uuid';
 import passport from 'passport';
+import http from 'http';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { GraphQLLocalStrategy, buildContext } from 'graphql-passport';
 import UserAPI from './datasources/User';
@@ -15,6 +16,11 @@ import store, { UserModel } from './datasources/models';
 import { Strategy as FacebookStrategy, StrategyOption as FacebookStrategyOption, VerifyFunction as FacebookVerifyFunction } from 'passport-facebook';
 import redis from 'redis';
 import connectRedis from 'connect-redis';
+import SignalAPI from './datasources/Signal';
+import RoleAPI from './datasources/Role';
+
+
+const { PORT } = process.env;
 
 const redisStore = connectRedis(session);
 const redisClient = redis.createClient({
@@ -22,6 +28,8 @@ const redisClient = redis.createClient({
 })
 const getDataSources = () => ({
   usersAPI: new UserAPI({ store }),
+  signalsAPI: new SignalAPI({ store }),
+  rolesAPI: new RoleAPI({ store }),
 });
 
 passport.use(
@@ -106,6 +114,7 @@ passport.serializeUser((user: UserModel, done) => {
 passport.deserializeUser((email, done) => {
   console.log('email', email)
   getDataSources().usersAPI.findOne({ email: email as string }).then(user => {
+    user.lo
     done(null, user);
   });
 });
@@ -115,7 +124,7 @@ const server = new ApolloServer({
   schema,
   validationRules: [depthLimit(7)],
   dataSources: getDataSources,
-  context: ({ req, res }) => buildContext({ req, res }),
+  context: ({ req, res, connection }) => buildContext({ req, res, connection }),
 });
 const corsOptions: CorsOptions = {
   origin: process.env.ALLOWED_ORIGIN,
@@ -150,6 +159,10 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {
 
 server.applyMiddleware({ app, path: '/graphql', cors: false });
 
-app.listen(
-  { port: process.env.PORT },
-  (): void => console.log(`\n🚀      GraphQL is now running on http://localhost:${process.env.PORT}/graphql`));
+const httpServer = http.createServer(app);
+server.installSubscriptionHandlers(httpServer);
+
+httpServer.listen( PORT, (): void => {
+  console.log(`🚀 Server ready at http://localhost:${PORT}${server.graphqlPath}`)
+  console.log(`🚀 Subscriptions ready at ws://localhost:${PORT}${server.subscriptionsPath}`)
+});

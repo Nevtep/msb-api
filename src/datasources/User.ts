@@ -63,7 +63,15 @@ class UserAPI extends DataSource {
   }
 
   async addUser(user: Partial<UserModel>) {
-    await this.store.User.create(user);
+    return await this.store.User.create(user);
+  }
+
+  async setUser(user: Partial<UserModel>) {
+    return await this.store.User.upsert(user);
+  }
+
+  async removeUser(id: string) {
+    return await this.store.User.destroy({ where: { id }});
   }
 }
     
