@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     verified: DataTypes.BOOLEAN
   }, {});
   User.associate = function(models) {
-    User.belongsToMany(models.Role, { through: 'UserRoles' })
+    User.hasMany(models.Service, { as: 'subscriptions'})
   };
   return User;
 };
