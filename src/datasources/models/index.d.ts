@@ -44,18 +44,18 @@ export type RoleModelStatic = typeof Model & {
 
 
 // We need to declare an interface for our model that is basically what our class would be
-export interface RoleModel extends Model {
+export interface ServiceModel extends Model {
     id: string,
-    name: DataTypes.STRING,
-    startDate: DataTypes.DATE,
-    endData: DataTypes.DATE,
-    roleId: DataTypes.STRING,
-    userId: DataTypes.STRING
+    name: string,
+    startDate: Date,
+    endData: Date,
+    roleId: string,
+    userId: string
 }
   
 // Need to declare the static model so `findOne` etc. use correct types.
-export type RoleModelStatic = typeof Model & {
-    new (values?: object, options?: BuildOptions): RoleModel;
+export type ServiceModelStatic = typeof Model & {
+    new (values?: object, options?: BuildOptions): ServiceModel;
 }
 
 export type MSBStore = {
@@ -65,6 +65,7 @@ export type MSBStore = {
     User: UserModelStatic;
     Signal: SignalModelStatic;
     Role: RoleModelStatic;
+    Service: ServiceModelStatic;
 }
 
 declare const Sequelize: typeof SequelizeType;
@@ -73,3 +74,4 @@ declare const Op: typeof OpType;
 declare const User: UserModelStatic;
 declare const Signal: SignalModelStatic;
 declare const Role: RoleModelStatic;
+declare const Service: ServiceModelStatic;
