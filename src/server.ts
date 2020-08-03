@@ -157,7 +157,7 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {
   failureRedirect: `${process.env.STATIC_APP_URL!}/login`,
 }));
 
-app.use(express.static(__dirname, { dotfiles: 'allow' } ));
+app.use(express.static(__dirname + '/static', { dotfiles: 'allow' } ));
 
 server.applyMiddleware({ app, path: '/graphql', cors: false });
 
