@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node 'dist/server.js'",
     "debug": "node -r ts-node/register -r dotenv/config --inspect-brk 'src/server.ts' src/server.ts",
-    "build": "tsc -p . && ncp src/schema dist/schema && ncp src/datasources/models dist/datasources/models",
+    "build": "tsc -p . && ncp src/schema dist/schema && ncp src/datasources/models dist/datasources/models && ncp src/_ssl dist/_ssl",
     "db:migrate": "cd src/datasources && NODE_TLS_REJECT_UNAUTHORIZED=0 npx sequelize-cli db:migrate",
     "start:dev": "npm run build:dev",
     "build:dev": "nodemon -r dotenv/config 'src/server.ts' --exec 'ts-node' src/server.ts -e ts,graphql",
