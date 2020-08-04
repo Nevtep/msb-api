@@ -132,7 +132,7 @@ const corsOptions: CorsOptions = {
   origin: process.env.ALLOWED_ORIGIN,
   credentials: true,
 };
-
+app.set('trust proxy', true);
 app.use(cors(corsOptions));
 app.use(compression());
 app.use(session({
@@ -166,20 +166,20 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {
 
 server.applyMiddleware({ app, path: '/graphql', cors: false });
 
-if (process.env.NODE_ENV !== 'production') {
-  const options = {
-    key: fs.readFileSync(__dirname + "/_ssl/privkey.pem"),
-    cert: fs.readFileSync(__dirname + "/_ssl/fullchain.pem")
-  };
+// if (process.env.NODE_ENV == 'production') {
+//   const options = {
+//     key: fs.readFileSync(__dirname + "/_ssl/privkey.pem"),
+//     cert: fs.readFileSync(__dirname + "/_ssl/fullchain.pem")
+//   };
   
-  const httpsServer = https.createServer(options, app);
-  server.installSubscriptionHandlers(httpsServer);
+//   const httpsServer = https.createServer(options, app);
+//   server.installSubscriptionHandlers(httpsServer);
   
-  httpsServer.listen( PORT, (): void => {
-    console.log(`🚀 Server ready at https://localhost:${PORT}${server.graphqlPath}`)
-    console.log(`🚀 Subscriptions ready at wss://localhost:${PORT}${server.subscriptionsPath}`)
-  });
-} else {
+//   httpsServer.listen( PORT, (): void => {
+//     console.log(`🚀 Server ready at https://localhost:${PORT}${server.graphqlPath}`)
+//     console.log(`🚀 Subscriptions ready at wss://localhost:${PORT}${server.subscriptionsPath}`)
+//   });
+// } else {
   const httpServer = http.createServer(app);
   server.installSubscriptionHandlers(httpServer);
 
@@ -187,4 +187,4 @@ if (process.env.NODE_ENV !== 'production') {
     console.log(`🚀 Server ready at http://localhost:${PORT}${server.graphqlPath}`)
     console.log(`🚀 Subscriptions ready at ws://localhost:${PORT}${server.subscriptionsPath}`)
   });
-}
+// }
