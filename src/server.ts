@@ -140,6 +140,7 @@ app.use(session({
     client: redisClient
   }),
     genid: () => uuid(),
+    name: uuid(),
     secret: process.env.SESSION_SECRET!,
     cookie: process.env.NODE_ENV == 'production' ? {
       domain: 'api.maximasenalesbinarias.com',
