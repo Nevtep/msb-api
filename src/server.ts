@@ -167,8 +167,8 @@ server.applyMiddleware({ app, path: '/graphql', cors: false });
 
 if (process.env.NODE_ENV == 'production') {
   const options = {
-    key: fs.readFileSync("./_ssl/privkey.pem"),
-    cert: fs.readFileSync("./_ssl/fullchain.pem")
+    key: fs.readFileSync(__dirname + "/_ssl/privkey.pem"),
+    cert: fs.readFileSync(__dirname + "/_ssl/fullchain.pem")
   };
   
   const httpsServer = https.createServer(options, app);
