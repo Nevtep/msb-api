@@ -151,7 +151,8 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
-app.options('/graphql', cors(corsOptions))
+app.options('/graphql', cors(corsOptions));
+
 app.post('/login',
   passport.authenticate('local', { successRedirect: '/',
                                    failureRedirect: '/login',
@@ -165,7 +166,7 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {
 
 server.applyMiddleware({ app, path: '/graphql', cors: false });
 
-if (process.env.NODE_ENV == 'production') {
+if (process.env.NODE_ENV !== 'production') {
   const options = {
     key: fs.readFileSync(__dirname + "/_ssl/privkey.pem"),
     cert: fs.readFileSync(__dirname + "/_ssl/fullchain.pem")
