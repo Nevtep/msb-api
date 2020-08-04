@@ -2,7 +2,9 @@ import express from 'express';
 import session from 'express-session';
 import { v4 as uuid } from 'uuid';
 import passport from 'passport';
+import https from 'https';
 import http from 'http';
+import fs from 'fs';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { GraphQLLocalStrategy, buildContext } from 'graphql-passport';
 import UserAPI from './datasources/User';
@@ -139,7 +141,11 @@ app.use(session({
   }),
     genid: () => uuid(),
     secret: process.env.SESSION_SECRET!,
-    cookie: process.env.NODE_ENV == 'production' ? { domain: 'maximasenalesbinarias.com' } : undefined,
+    cookie: process.env.NODE_ENV == 'production' ? {
+      domain: 'api.maximasenalesbinarias.com',
+      sameSite: 'none',
+      secure: true
+    } : undefined,
     resave: false,
     saveUninitialized: false,
 }));
@@ -157,14 +163,27 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {
   failureRedirect: `${process.env.STATIC_APP_URL!}/login`,
 }));
 
-app.use(express.static(__dirname + '/static', { dotfiles: 'allow' } ));
-
 server.applyMiddleware({ app, path: '/graphql', cors: false });
 
-const httpServer = http.createServer(app);
-server.installSubscriptionHandlers(httpServer);
+if (process.env.NODE_ENV == 'production') {
+  const options = {
+    key: fs.readFileSync(__dirname + "/_ssl/privkey.pem"),
+    cert: fs.readFileSync(__dirname + "/_ssl/fullchain.pem")
+  };
+  
+  const httpsServer = https.createServer(options, app);
+  server.installSubscriptionHandlers(httpsServer);
+  
+  httpsServer.listen( PORT, (): void => {
+    console.log(`🚀 Server ready at https://localhost:${PORT}${server.graphqlPath}`)
+    console.log(`🚀 Subscriptions ready at wss://localhost:${PORT}${server.subscriptionsPath}`)
+  });
+} else {
+  const httpServer = http.createServer(app);
+  server.installSubscriptionHandlers(httpServer);
 
-httpServer.listen( PORT, (): void => {
-  console.log(`🚀 Server ready at http://localhost:${PORT}${server.graphqlPath}`)
-  console.log(`🚀 Subscriptions ready at ws://localhost:${PORT}${server.subscriptionsPath}`)
-});
+  httpServer.listen( PORT, (): void => {
+    console.log(`🚀 Server ready at http://localhost:${PORT}${server.graphqlPath}`)
+    console.log(`🚀 Subscriptions ready at ws://localhost:${PORT}${server.subscriptionsPath}`)
+  });
+}
