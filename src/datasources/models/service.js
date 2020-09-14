@@ -9,9 +9,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     name: DataTypes.STRING,
     startDate: DataTypes.DATE,
-    endData: DataTypes.DATE,
-    roleId: DataTypes.STRING,
-    userId: DataTypes.STRING
+    endDate: DataTypes.DATE,
+    RoleId: DataTypes.STRING,
+    UserId: DataTypes.STRING,
+    paymentRef: DataTypes.STRING
   }, {});
   Service.associate = function({ User, Role }) {
     Service.belongsTo(User);

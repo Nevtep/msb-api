@@ -2,20 +2,40 @@
 import { IResolvers } from 'graphql-tools';
 import { v4 as uuid } from 'uuid';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import csv from 'csv-parser';
 import { PubSub } from 'apollo-server';
 import SignalAPI from '../datasources/Signal';
-import store, { Op } from '../datasources/models';
+import store, { Op, ServiceModel } from '../datasources/models';
 import TimestampType from './GraphQLTimestamp';
 import { isAdmin } from './authorization';
 import { FileUpload } from 'graphql-upload';
 import DateType from './GraphQLDate';
+import moment from 'moment';
+import { OrderDetail } from '../datasources/Orders';
 
 const VIP_SIGNAL = 'VIP_SIGNAL';
 const VIP_MESSAGE = 'VIP_MESSAGE';
 const MS_IN_A_MIN = 60000
 const pubsub = new PubSub();
 const signalsAPI = new SignalAPI({ store });
+const plans = [
+  {
+    amount: 30,
+    role: 'VIP',
+    duration: [15, 'd']
+  },
+  {
+    amount: 50,
+    role: 'VIP',
+    duration: [1, 'M']
+  },
+  {
+    amount: 200,
+    role: 'VIP',
+    duration: [1, 'y']
+  },
+]
 
 const resolverMap: IResolvers = {
   Date: DateType,
@@ -95,6 +115,36 @@ const resolverMap: IResolvers = {
         await context.login(newUser);
   
         return { user: newUser };
+    },
+    confirmSubscription: async(_parent, { purchaseId }: { purchaseId: string}, context ) => {
+      const { dataSources } = context;
+      if(context.isUnauthenticated()) {
+        throw new Error('You need to login to subscribe')
+      }
+      // rate limit with a queue
+      const user = context.getUser();
+      const idHash = crypto.createHash('sha512').update(user.id).digest('hex');
+      const order: OrderDetail = await dataSources.ordersAPI.getOrderById(purchaseId);
+      if (order.referenceId !== idHash) {
+        throw new Error('Unauthorized to confirm this transaction.')
+      }
+      const plan = plans.find(p => p.amount === parseInt(order.amount.value));
+      if (!plan) {
+        throw new Error('Wrong payment amount.')
+      }
+      const role = await dataSources.rolesAPI.findOne({ name: plan.role });
+      const service: Partial<ServiceModel> = {
+        name: plan.role,
+        startDate: order.createTime,
+        endDate: moment().add(...plan.duration).toDate(),
+        RoleId: role.id,
+        UserId: user.id,
+        paymentRef: order.id
+      }
+      console.log('insert', service)
+      const dbService = await dataSources.serviceAPI.addService(service);
+      user.subscriptions.push(dbService);
+      return user;
     },
     addRole: async (parent, role, context) => {
       const { dataSources } = context;

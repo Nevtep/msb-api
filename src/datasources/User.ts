@@ -54,8 +54,8 @@ class UserAPI extends DataSource {
     for(let key of Object.keys(fields)) {
       query[key] = fields[key];
     }
-
-    return await this.store.User.findOne({ where: { ...query } });
+    // @ts-ignore
+    return await this.store.User.findOne({ where: { ...query }, include: [{ model: this.store.Service, as: 'subscriptions'}] });
   }
 
   async getUsers(): Promise<UserModel[]> {

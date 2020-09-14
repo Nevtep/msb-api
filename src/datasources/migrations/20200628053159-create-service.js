@@ -14,13 +14,13 @@ module.exports = {
       startDate: {
         type: Sequelize.DATE
       },
-      endData: {
+      endDate: {
         type: Sequelize.DATE
       },
-      roleId: {
+      RoleId: {
         type: Sequelize.INTEGER,
       },
-      userId: {
+      UserId: {
         type: Sequelize.UUID,
       },
       createdAt: {

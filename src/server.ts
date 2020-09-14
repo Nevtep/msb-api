@@ -8,19 +8,21 @@ import fs from 'fs';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { GraphQLLocalStrategy, buildContext } from 'graphql-passport';
 import UserAPI from './datasources/User';
-import { ApolloServer } from 'apollo-server-express';
+import { ApolloServer, AuthenticationError } from 'apollo-server-express';
 import depthLimit from 'graphql-depth-limit';
 import compression from 'compression';
 import cors, { CorsOptions } from 'cors';
 import bcrypt from 'bcrypt';
-import schema from './schema';
+import { resolvers, typeDefs } from './schema';
 import store, { UserModel } from './datasources/models';
 import { Strategy as FacebookStrategy, StrategyOption as FacebookStrategyOption, VerifyFunction as FacebookVerifyFunction } from 'passport-facebook';
 import redis from 'redis';
 import connectRedis from 'connect-redis';
 import SignalAPI from './datasources/Signal';
 import RoleAPI from './datasources/Role';
-
+import ServiceAPI from './datasources/Service';
+import OrdersAPI from './datasources/Orders';
+import { isVIP } from './schema/authorization';
 
 const { PORT } = process.env;
 
@@ -32,6 +34,8 @@ const getDataSources = () => ({
   usersAPI: new UserAPI({ store }),
   signalsAPI: new SignalAPI({ store }),
   rolesAPI: new RoleAPI({ store }),
+  serviceAPI: new ServiceAPI({ store }),
+  ordersAPI: new OrdersAPI(process.env.MSB_PP_CID!, process.env.MSB_PP_SCRT!)
 });
 
 passport.use(
@@ -109,25 +113,18 @@ passport.use(new LocalStrategy(
   
 
 passport.serializeUser((user: UserModel, done) => {
-  console.log('user:', user)
-    done(null, user.email);
+  done(null, user.email);
 });
   
 passport.deserializeUser((email, done) => {
   console.log('email', email)
   getDataSources().usersAPI.findOne({ email: email as string }).then(user => {
-    user.lo
     done(null, user);
   });
 });
 
 const app = express();
-const server = new ApolloServer({
-  schema,
-  validationRules: [depthLimit(7)],
-  dataSources: getDataSources,
-  context: ({ req, res, connection }) => buildContext({ req, res, connection }),
-});
+
 const corsOptions: CorsOptions = {
   origin: process.env.ALLOWED_ORIGIN,
   credentials: true,
@@ -135,21 +132,23 @@ const corsOptions: CorsOptions = {
 app.set('trust proxy', true);
 app.use(cors(corsOptions));
 app.use(compression());
-app.use(session({
+
+const sessionHandler = session({
   store: new redisStore({
     client: redisClient
   }),
-    genid: () => uuid(),
-    name: uuid(),
-    secret: process.env.SESSION_SECRET!,
-    cookie: process.env.NODE_ENV == 'production' ? {
-      domain: 'api.maximasenalesbinarias.com',
-      sameSite: 'none',
-      secure: true
-    } : undefined,
-    resave: false,
-    saveUninitialized: false,
-}));
+  genid: () => uuid(),
+  name: uuid(),
+  secret: process.env.SESSION_SECRET!,
+  cookie: process.env.NODE_ENV == 'production' ? {
+    domain: 'api.maximasenalesbinarias.com',
+    sameSite: 'none',
+    secure: true
+  } : undefined,
+  resave: false,
+  saveUninitialized: false,
+});
+app.use(sessionHandler);
 app.use(passport.initialize());
 app.use(passport.session());
 app.options('/graphql', cors(corsOptions));
@@ -164,6 +163,54 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {
   successRedirect: `${process.env.STATIC_APP_URL!}/app`,
   failureRedirect: `${process.env.STATIC_APP_URL!}/login`,
 }));
+
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+  subscriptions: {
+    onConnect: async (connectionParams, webSocket, { request }) => {
+      const subscriptionContext: any = await new Promise(res => {
+        // @ts-ignore
+        sessionHandler(request, {}, () => {
+          // @ts-ignore
+          passport.initialize()(request, {}, () => {
+            passport.session()(request, {}, () => {
+              // @ts-ignore
+              const email: string = request?.session?.passport?.user || '';
+              getDataSources().usersAPI.findOne({ email }).then(user => {  
+                if(user === null) {
+                  res(null);
+                } else {
+                  isVIP(user).then((vip: boolean) => {
+                    res(
+                      vip
+                        ? ({
+                            req: request,
+                            user: user,
+                          } as any)
+                        : null
+                    );
+                  })
+                }
+              });
+            });
+          })
+        });
+      });
+      if (!subscriptionContext) {
+        throw new AuthenticationError('Unauthorized');
+      }
+      return subscriptionContext;
+    },
+  },
+  validationRules: [depthLimit(7)],
+  dataSources: getDataSources,
+  context: ({ req, res, connection }) => buildContext({ req, res, connection }),
+  engine: {    
+    reportSchema: true,
+    graphVariant: 'current'
+  }
+});
 
 server.applyMiddleware({ app, path: '/graphql', cors: false });
 
