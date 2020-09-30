@@ -59,7 +59,7 @@ class UserAPI extends DataSource {
   }
 
   async getUsers(): Promise<UserModel[]> {
-    return await this.store.User.findAll();
+    return await this.store.User.findAll({ include: [{ model: this.store.Service, as: 'subscriptions'}] });
   }
 
   async addUser(user: Partial<UserModel>) {

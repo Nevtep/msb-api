@@ -58,7 +58,7 @@ const resolverMap: IResolvers = {
       }
       const {dataSources} = context;
       const user = context.getUser();
-      if(isAdmin(user)) {
+      if(await isAdmin(user)) {
         return await dataSources.signalsAPI.getSignals();
       } else {
         throw new Error('DO NOT FUCK WITH US')
@@ -70,7 +70,7 @@ const resolverMap: IResolvers = {
       }
       const {dataSources} = context;
       const user = context.getUser();
-      if(isAdmin(user)) {
+      if(await isAdmin(user)) {
         return await dataSources.usersAPI.getUsers();
       } else {
         throw new Error('DO NOT FUCK WITH US')
@@ -82,7 +82,7 @@ const resolverMap: IResolvers = {
       }
       const {dataSources} = context;
       const user = context.getUser();
-      if(isAdmin(user)) {
+      if(await isAdmin(user)) {
         return await dataSources.rolesAPI.getRoles();
       } else {
         throw new Error('DO NOT FUCK WITH US')
@@ -141,33 +141,45 @@ const resolverMap: IResolvers = {
         UserId: user.id,
         paymentRef: order.id
       }
-      console.log('insert', service)
       const dbService = await dataSources.serviceAPI.addService(service);
       user.subscriptions.push(dbService);
       return user;
     },
-    addRole: async (parent, role, context) => {
+    addRole: async (parent, { name, userId, startDate, endDate }, context) => {
       const { dataSources } = context;
       if(context.isUnauthenticated()) {
-        throw new Error('You need to login to add signals')
+        throw new Error('You need to login to add subscriptions')
       }
       // rate limit with a queue
       const user = context.getUser();
-      if(isAdmin(user)) {
-        return dataSources.rolesAPI.addRole(role);
+      if(await isAdmin(user)) {
+        const role = await dataSources.rolesAPI.findOne({ name });
+        const service: Partial<ServiceModel> = {
+          name,
+          startDate,
+          endDate,
+          RoleId: role.id,
+          UserId: userId,
+          paymentRef: `user:${user.id}`
+        }
+        console.log('insert', service)
+        const dbService = await dataSources.serviceAPI.addService(service);
+        const updated = await dataSources.usersAPI.findOne({ id: userId });
+        // user.subscriptions.push(dbService);
+        return updated;
       } else {
         throw new Error('DO NOT FUCK WITH US')
       }
     },
-    removeRole: async (parent, role, context) => {
+    removeRole: async (parent, service, context) => {
       const { dataSources } = context;
       if(context.isUnauthenticated()) {
-        throw new Error('You need to login to remove signals')
+        throw new Error('You need to login to remove roles')
       }
       // rate limit with a queue
       const user = context.getUser();
-      if(isAdmin(user)) {
-        return await dataSources.rolesAPI.removeRole(role.id);
+      if(await isAdmin(user)) {
+        return await dataSources.serviceAPI.removeService(service.id);
       } else {
         throw new Error('DO NOT FUCK WITH US')
       }
@@ -180,7 +192,7 @@ const resolverMap: IResolvers = {
       // rate limit with a queue
       const authenticatedUser = context.getUser();
       console.log('user', authenticatedUser)
-      if(isAdmin(authenticatedUser)) {
+      if(await isAdmin(authenticatedUser)) {
         const values = {
           id: uuid(),
           ...user,
@@ -199,7 +211,7 @@ const resolverMap: IResolvers = {
       }
       // rate limit with a queue
       const authenticatedUser = context.getUser();
-      if(isAdmin(authenticatedUser)) {
+      if(await isAdmin(authenticatedUser)) {
         return await dataSources.usersAPI.removeUser(id);
       } else {
         throw new Error('DO NOT FUCK WITH US');
@@ -212,7 +224,7 @@ const resolverMap: IResolvers = {
       }
       // rate limit with a queue
       const user = context.getUser();
-      if(isAdmin(user)) {
+      if(await isAdmin(user)) {
         const time = new Date(signal.time);
         const { pair, op } = signal;
         return dataSources.signalsAPI.addSignal({
@@ -231,19 +243,19 @@ const resolverMap: IResolvers = {
       }
       // rate limit with a queue
       const user = context.getUser();
-      if(isAdmin(user)) {
+      if(await isAdmin(user)) {
         return dataSources.signalsAPI.removeSignal(role.id);
       } else {
         throw new Error('DO NOT FUCK WITH US')
       }
     },
-    uploadSignals: (_parent, args, context) => {const { dataSources } = context;
+    uploadSignals: async (_parent, args, context) => {const { dataSources } = context;
       if(context.isUnauthenticated()) {
         throw new Error('You need to login to add signals')
       }
       // rate limit with a queue
       const user = context.getUser();
-      if(isAdmin(user)) {
+      if(await isAdmin(user)) {
         return args.file.then((file: FileUpload) => {
           //Contents of Upload scalar: https://github.com/jaydenseric/graphql-upload#class-graphqlupload
           const results: string[] = [];
