@@ -262,7 +262,8 @@ const resolverMap: IResolvers = {
           file.createReadStream() // is a readable node stream that contains the contents of the uploaded file
             .pipe(csv())
             .on('data', (signal) => {
-              const time = new Date(signal.time);
+              console.log('signal: %o', signal)
+              const time = Date.parse(signal.time);
               const { pair, op } = signal;
               results.push(dataSources.signalsAPI.addSignal({
                 time,
