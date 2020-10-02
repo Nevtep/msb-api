@@ -1,7 +1,9 @@
 import isEmail from 'isemail';
 import { DataSource, DataSourceConfig } from 'apollo-datasource';
 import { MSBStore, SignalModel } from './models';
-import { WhereAttributeHash } from 'sequelize/types';
+import { Op } from './models';
+import { isVIP } from '../schema/authorization';
+import { WhereAttributeHash } from 'sequelize/types/lib/model';
 
 export interface SignalAPIArguments {
   store: MSBStore
@@ -55,7 +57,7 @@ class SignalAPI extends DataSource {
       query[key] = fields[key];
     }
 
-    return await this.store.Signal.findOne({ where: { ...query } });
+    return this.store.Signal.findOne({ where: { ...query } });
   }
 
   /**
@@ -69,19 +71,33 @@ class SignalAPI extends DataSource {
       query[key] = fields[key];
     }
 
-    return await this.store.Signal.findAll({ where: { ...query } });
+    return this.store.Signal.findAll({ where: { ...query } });
   }
 
   async getSignals(): Promise<SignalModel[]> {
-    return await this.store.Signal.findAll();
+    if(isVIP(this.context.getUser())) {
+      const now = Date.now();
+      const MS_IN_A_MIN = 60000
+      const MS_IN_A_HOUR = 60 * MS_IN_A_MIN;
+      const vipSignals = {
+        where: {
+              [Op.and]: [{ time: { [Op.gt]: now - MS_IN_A_HOUR * 8}}, { time: { [Op.lt]: now + MS_IN_A_HOUR * 12}}]
+            }
+      }
+      console.log('return vip signals')
+      return this.store.Signal.findAll(vipSignals);
+    } else {
+      console.log('return all signals')
+      return this.store.Signal.findAll();
+    }
   }
 
   async addSignal(signal: Partial<SignalModel>) {
-    return await this.store.Signal.create(signal);
+    return this.store.Signal.create(signal);
   }
 
   async removeSignal(id: string) {
-    return await this.store.Signal.destroy({ where: { id }});
+    return this.store.Signal.destroy({ where: { id }});
   }
 }
     

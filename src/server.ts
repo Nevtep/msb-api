@@ -22,7 +22,7 @@ import SignalAPI from './datasources/Signal';
 import RoleAPI from './datasources/Role';
 import ServiceAPI from './datasources/Service';
 import OrdersAPI from './datasources/Orders';
-import { isVIP } from './schema/authorization';
+import { isAdmin, isVIP } from './schema/authorization';
 
 const { PORT } = process.env;
 
@@ -181,7 +181,7 @@ const server = new ApolloServer({
                 if(user === null) {
                   res(null);
                 } else {
-                  isVIP(user).then((vip: boolean) => {
+                  const vip = isVIP(user) || isAdmin(user);
                     res(
                       vip
                         ? ({
@@ -190,7 +190,6 @@ const server = new ApolloServer({
                           } as any)
                         : null
                     );
-                  })
                 }
               });
             });

@@ -39,7 +39,7 @@
   }
 
   type Subscription {
-    vipSignal: Signal
+    vipSignal: Message
     vipMessage: Message
   }
 
@@ -63,6 +63,7 @@
     removeSignal(id: ID): ID
     uploadSignals(file: Upload!): [Signal]
     sendMessage(text: String): Message
+    sendSignal(text: String): Message
   }
 
   enum OperationType {

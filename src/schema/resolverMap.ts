@@ -5,10 +5,10 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import csv from 'csv-parser';
 import { PubSub } from 'apollo-server';
-import SignalAPI from '../datasources/Signal';
-import store, { Op, ServiceModel } from '../datasources/models';
+// import SignalAPI from '../datasources/Signal';
+import /*store,*/ { /*Op,*/ ServiceModel } from '../datasources/models';
 import TimestampType from './GraphQLTimestamp';
-import { isAdmin } from './authorization';
+import { isAdmin, isVIP } from './authorization';
 import { FileUpload } from 'graphql-upload';
 import DateType from './GraphQLDate';
 import moment from 'moment';
@@ -16,9 +16,9 @@ import { OrderDetail } from '../datasources/Orders';
 
 const VIP_SIGNAL = 'VIP_SIGNAL';
 const VIP_MESSAGE = 'VIP_MESSAGE';
-const MS_IN_A_MIN = 60000
+// const MS_IN_A_MIN = 60000
 const pubsub = new PubSub();
-const signalsAPI = new SignalAPI({ store });
+// const signalsAPI = new SignalAPI({ store });
 const plans = [
   {
     amount: 30,
@@ -58,7 +58,7 @@ const resolverMap: IResolvers = {
       }
       const {dataSources} = context;
       const user = context.getUser();
-      if(await isAdmin(user)) {
+      if(isVIP(user) || isAdmin(user)) {
         return await dataSources.signalsAPI.getSignals();
       } else {
         throw new Error('DO NOT FUCK WITH US')
@@ -70,7 +70,7 @@ const resolverMap: IResolvers = {
       }
       const {dataSources} = context;
       const user = context.getUser();
-      if(await isAdmin(user)) {
+      if(isAdmin(user)) {
         return await dataSources.usersAPI.getUsers();
       } else {
         throw new Error('DO NOT FUCK WITH US')
@@ -82,7 +82,7 @@ const resolverMap: IResolvers = {
       }
       const {dataSources} = context;
       const user = context.getUser();
-      if(await isAdmin(user)) {
+      if(isAdmin(user)) {
         return await dataSources.rolesAPI.getRoles();
       } else {
         throw new Error('DO NOT FUCK WITH US')
@@ -152,7 +152,7 @@ const resolverMap: IResolvers = {
       }
       // rate limit with a queue
       const user = context.getUser();
-      if(await isAdmin(user)) {
+      if(isAdmin(user)) {
         const role = await dataSources.rolesAPI.findOne({ name });
         const service: Partial<ServiceModel> = {
           name,
@@ -178,7 +178,7 @@ const resolverMap: IResolvers = {
       }
       // rate limit with a queue
       const user = context.getUser();
-      if(await isAdmin(user)) {
+      if(isAdmin(user)) {
         return await dataSources.serviceAPI.removeService(service.id);
       } else {
         throw new Error('DO NOT FUCK WITH US')
@@ -192,7 +192,7 @@ const resolverMap: IResolvers = {
       // rate limit with a queue
       const authenticatedUser = context.getUser();
       console.log('user', authenticatedUser)
-      if(await isAdmin(authenticatedUser)) {
+      if(isAdmin(authenticatedUser)) {
         const values = {
           id: uuid(),
           ...user,
@@ -211,7 +211,7 @@ const resolverMap: IResolvers = {
       }
       // rate limit with a queue
       const authenticatedUser = context.getUser();
-      if(await isAdmin(authenticatedUser)) {
+      if(isAdmin(authenticatedUser)) {
         return await dataSources.usersAPI.removeUser(id);
       } else {
         throw new Error('DO NOT FUCK WITH US');
@@ -224,7 +224,7 @@ const resolverMap: IResolvers = {
       }
       // rate limit with a queue
       const user = context.getUser();
-      if(await isAdmin(user)) {
+      if(isAdmin(user)) {
         const time = new Date(signal.time);
         const { pair, op } = signal;
         return dataSources.signalsAPI.addSignal({
@@ -243,7 +243,7 @@ const resolverMap: IResolvers = {
       }
       // rate limit with a queue
       const user = context.getUser();
-      if(await isAdmin(user)) {
+      if(isAdmin(user)) {
         return dataSources.signalsAPI.removeSignal(role.id);
       } else {
         throw new Error('DO NOT FUCK WITH US')
@@ -255,7 +255,7 @@ const resolverMap: IResolvers = {
       }
       // rate limit with a queue
       const user = context.getUser();
-      if(await isAdmin(user)) {
+      if(isAdmin(user)) {
         return args.file.then((file: FileUpload) => {
           //Contents of Upload scalar: https://github.com/jaydenseric/graphql-upload#class-graphqlupload
           const results: string[] = [];
@@ -291,17 +291,30 @@ const resolverMap: IResolvers = {
       pubsub.publish(VIP_MESSAGE, { vipMessage: { user, ...message }});
 
     },
+    sendSignal: async (parent, message, context) => {
+      console.log(context.getUser());
+      if(context.isUnauthenticated()) {
+        throw new Error('You need to login to send messages')
+      }
+      // rate limit with a queue
+      const user = context.getUser();
+      if(isAdmin(user)) {
+        pubsub.publish(VIP_SIGNAL, { vipSignal: { user, ...message }});
+      } else {
+        throw new Error('DO NOT FUCK WITH US');
+      }
+    },
   },
 };
 
-setInterval(async () => {
-  const now = Date.now();
-  const signals = await signalsAPI.find({
-    [Op.and]: [{ time: { [Op.gt]: now - MS_IN_A_MIN * 15}}, { time: { [Op.lt]: now + MS_IN_A_MIN * 15}}]
-  });
-  for(let vipSignal of signals) {
-    pubsub.publish(VIP_SIGNAL, { vipSignal });
-  };
-}, MS_IN_A_MIN * 5)
+// setInterval(async () => {
+//   const now = Date.now();
+//   const signals = await signalsAPI.find({
+//     [Op.and]: [{ time: { [Op.gt]: now - MS_IN_A_MIN * 15}}, { time: { [Op.lt]: now + MS_IN_A_MIN * 15}}]
+//   });
+//   for(let vipSignal of signals) {
+//     pubsub.publish(VIP_SIGNAL, { vipSignal });
+//   };
+// }, MS_IN_A_MIN * 5)
 
 export default resolverMap;

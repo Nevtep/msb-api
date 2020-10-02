@@ -11,6 +11,7 @@ export interface UserModel extends Model {
     readonly fullName: string;
     readonly password?: string;
     readonly verified?: boolean;
+    readonly subscriptions?: Array<ServiceModel>;
 }
   
 // Need to declare the static model so `findOne` etc. use correct types.
