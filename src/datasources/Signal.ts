@@ -76,12 +76,18 @@ class SignalAPI extends DataSource {
 
   async getSignals(): Promise<SignalModel[]> {
     if(isVIP(this.context.getUser())) {
-      const now = Date.now();
+      const date = new Date();
       const MS_IN_A_MIN = 60000
       const MS_IN_A_HOUR = 60 * MS_IN_A_MIN;
+      const MS_IN_A_DAY = 24 * MS_IN_A_HOUR;
+      date.setMinutes(0);
+      date.setHours(0);
+      date.setSeconds(0);
+      date.setMilliseconds(0);
+      const today = date.getTime();
       const vipSignals = {
         where: {
-              [Op.and]: [{ time: { [Op.gt]: now - MS_IN_A_HOUR * 8}}, { time: { [Op.lt]: now + MS_IN_A_HOUR * 12}}]
+              [Op.and]: [{ time: { [Op.gt]: today }}, { time: { [Op.lt]: today + MS_IN_A_DAY }}]
             }
       }
       console.log('return vip signals')
