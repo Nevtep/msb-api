@@ -13,33 +13,18 @@ import { FileUpload } from 'graphql-upload';
 import DateType from './GraphQLDate';
 import moment from 'moment';
 import { OrderDetail } from '../datasources/Orders';
+import DurationType from './GraphQLDuration';
 
 const VIP_SIGNAL = 'VIP_SIGNAL';
 const VIP_MESSAGE = 'VIP_MESSAGE';
 // const MS_IN_A_MIN = 60000
 const pubsub = new PubSub();
 // const signalsAPI = new SignalAPI({ store });
-const plans = [
-  {
-    amount: 30,
-    role: 'VIP',
-    duration: [15, 'd']
-  },
-  {
-    amount: 50,
-    role: 'VIP',
-    duration: [1, 'M']
-  },
-  {
-    amount: 200,
-    role: 'VIP',
-    duration: [1, 'y']
-  },
-]
 
 const resolverMap: IResolvers = {
   Date: DateType,
   Timestamp: TimestampType,
+  Duration: DurationType,
   Subscription: {
     vipSignal: {
       // Additional event labels can be passed to asyncIterator creation
@@ -87,6 +72,14 @@ const resolverMap: IResolvers = {
       } else {
         throw new Error('DO NOT FUCK WITH US')
       }
+    },
+    plans: async (parent, args, context) => {
+      if(context.isUnauthenticated()) {
+        throw new Error('Only authorized users')
+      }
+      const { dataSources } = context;
+      const user = context.getUser();
+      return await dataSources.plansAPI.getPlans();
     }, 
   },
   Mutation: {
@@ -121,6 +114,7 @@ const resolverMap: IResolvers = {
       if(context.isUnauthenticated()) {
         throw new Error('You need to login to subscribe')
       }
+      console.log('about to confirm')
       // rate limit with a queue
       const user = context.getUser();
       const idHash = crypto.createHash('sha512').update(user.id).digest('hex');
@@ -128,22 +122,24 @@ const resolverMap: IResolvers = {
       if (order.referenceId !== idHash) {
         throw new Error('Unauthorized to confirm this transaction.')
       }
-      const plan = plans.find(p => p.amount === parseInt(order.amount.value));
-      if (!plan) {
+      try {
+        const plan =  await dataSources.plansAPI.findOne({amount: parseInt(order.amount.value)});
+        console.log('selected plan duration: %o', plan.duration)
+        const role = await dataSources.rolesAPI.findOne({ name: plan.role });
+        const service: Partial<ServiceModel> = {
+          name: plan.role,
+          startDate: order.createTime,
+          endDate: moment().add(...plan.duration).toDate(),
+          RoleId: role.id,
+          UserId: user.id,
+          paymentRef: order.id
+        }
+        const dbService = await dataSources.serviceAPI.addService(service);
+        user.subscriptions.push(dbService);
+        return user;
+      } catch {
         throw new Error('Wrong payment amount.')
       }
-      const role = await dataSources.rolesAPI.findOne({ name: plan.role });
-      const service: Partial<ServiceModel> = {
-        name: plan.role,
-        startDate: order.createTime,
-        endDate: moment().add(...plan.duration).toDate(),
-        RoleId: role.id,
-        UserId: user.id,
-        paymentRef: order.id
-      }
-      const dbService = await dataSources.serviceAPI.addService(service);
-      user.subscriptions.push(dbService);
-      return user;
     },
     addRole: async (parent, { name, userId, startDate, endDate }, context) => {
       const { dataSources } = context;
@@ -279,6 +275,49 @@ const resolverMap: IResolvers = {
         });
       } else {
         throw new Error('DO NOT FUCK WITH US');
+      }
+    },
+    addPlan: async (parent, { plan }, context) => {
+      const { dataSources } = context;
+      if(context.isUnauthenticated()) {
+        throw new Error('You need to login to add plans')
+      }
+      // rate limit with a queue
+      const user = context.getUser();
+      if(isAdmin(user)) {
+        return dataSources.plansAPI.addPlan(plan);
+      } else {
+        throw new Error('DO NOT FUCK WITH US')
+      }
+    },
+    updatePlan: async (parent, { plan }, context) => {
+      const { dataSources } = context;
+      if(context.isUnauthenticated()) {
+        throw new Error('You need to login to add plans')
+      }
+      // rate limit with a queue
+      const user = context.getUser();
+      if(isAdmin(user)) {
+        const duration = JSON.parse(plan.duration);
+        return dataSources.plansAPI.setPlan({
+          ...plan,
+          duration
+        });
+      } else {
+        throw new Error('DO NOT FUCK WITH US')
+      }
+    },
+    removePlan: async (parent, { id }, context) => {
+      const { dataSources } = context;
+      if(context.isUnauthenticated()) {
+        throw new Error('You need to login to remove plans')
+      }
+      // rate limit with a queue
+      const user = context.getUser();
+      if(isAdmin(user)) {
+        return dataSources.plansAPI.removePlan(id);
+      } else {
+        throw new Error('DO NOT FUCK WITH US')
       }
     },
     sendMessage: async (parent, message, context) => {

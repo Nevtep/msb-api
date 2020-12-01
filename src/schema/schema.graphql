@@ -1,5 +1,6 @@
   scalar Timestamp
   scalar Date
+  scalar Duration
 
   type User {
     id: ID
@@ -38,6 +39,14 @@
     user: User
   }
 
+  type Plan {
+    id: ID
+    label: String
+    amount: Int
+    duration: [Duration]
+    role: String
+  }
+
   type Subscription {
     vipSignal: Message
     vipMessage: Message
@@ -46,6 +55,7 @@
   type Query {
     currentUser: User
     signals: [Signal]
+    plans: [Plan]
     users: [User]
     roles: [Role]
   }
@@ -62,6 +72,9 @@
     addSignal(time: Timestamp!, pair: String!, op: OperationType!): Signal
     removeSignal(id: ID): ID
     uploadSignals(file: Upload!): [Signal]
+    addPlan(plan: PlanInput): Plan
+    updatePlan(plan: PlanInput): Plan
+    removePlan(id: ID): ID
     sendMessage(text: String): Message
     sendSignal(text: String): Message
   }
@@ -72,20 +85,28 @@
   }
 
   input UserInput {
-    id: String
+    id: ID
     fullName: String
     email: String
     services: [ServiceInput] 
   }
 
   input ServiceInput {
-    id: String
+    id: ID
     role: ID
     startDate: Date
     endDate: Date
     invoice: ID
   }
+  
 
+input PlanInput {
+  id: ID
+  label: String
+  amount: Int
+  duration: [Duration]
+  role: String
+}
 
 input CurrencyValueInput {
   currency_code: String

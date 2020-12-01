@@ -12,11 +12,12 @@
     "debug": "node -r ts-node/register -r dotenv/config --inspect-brk 'src/server.ts' src/server.ts",
     "build": "tsc -p . && ncp src/schema dist/schema && ncp src/datasources/models dist/datasources/models && ncp src/_ssl dist/_ssl",
     "db:migrate": "cd src/datasources && NODE_TLS_REJECT_UNAUTHORIZED=0 npx sequelize-cli db:migrate",
+    "db:migrate:undo": "cd src/datasources && NODE_TLS_REJECT_UNAUTHORIZED=0 npx sequelize-cli db:migrate:undo",
     "db:drop": "cd src/datasources && NODE_TLS_REJECT_UNAUTHORIZED=0 npx sequelize-cli db:migrate:undo:all",
     "db:seed": "cd src/datasources && NODE_TLS_REJECT_UNAUTHORIZED=0 npx sequelize-cli db:seed:all",
     "generate:migration": "npx sequelize-cli migration:generate --config ./src/datasources/config/config.json --migrations-path ./src/datasources/migrations/ --name",
     "start:dev": "npm run build:dev",
-    "build:dev": "nodemon -r dotenv/config 'src/server.ts' --exec 'ts-node' src/server.ts -e ts,graphql",
+    "build:dev": "nodemon -r dotenv/config 'src/server.ts' --exec 'ts-node' src/server.ts -e js,ts,graphql",
     "redis": "docker run --name redis -p 6379:6379 -d redis"
   },
   "dependencies": {

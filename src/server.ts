@@ -22,6 +22,7 @@ import SignalAPI from './datasources/Signal';
 import RoleAPI from './datasources/Role';
 import ServiceAPI from './datasources/Service';
 import OrdersAPI from './datasources/Orders';
+import PlanAPI from './datasources/Plan';
 import { isAdmin, isVIP } from './schema/authorization';
 
 const { PORT } = process.env;
@@ -35,7 +36,8 @@ const getDataSources = () => ({
   signalsAPI: new SignalAPI({ store }),
   rolesAPI: new RoleAPI({ store }),
   serviceAPI: new ServiceAPI({ store }),
-  ordersAPI: new OrdersAPI(process.env.MSB_PP_CID!, process.env.MSB_PP_SCRT!)
+  ordersAPI: new OrdersAPI(process.env.MSB_PP_CID!, process.env.MSB_PP_SCRT!),
+  plansAPI: new PlanAPI({ store })
 });
 
 passport.use(
