@@ -6,13 +6,9 @@ module.exports = (sequelize, DataTypes) => {
     duration: {
       type: DataTypes.TEXT,
       get: function (field) {
-        console.log('data: ', this.dataValues)
-        console.log('get: ', this.getDataValue(field))
         return JSON.parse(this.getDataValue(field));
       },
       set: function (value, field) {
-        console.log('set: ', JSON.stringify(value))
-
         this.setDataValue(field, JSON.stringify(value));
       },
     },

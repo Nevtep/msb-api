@@ -2,7 +2,7 @@ import isEmail from 'isemail';
 import { DataSource, DataSourceConfig } from 'apollo-datasource';
 import { MSBStore, SignalModel } from './models';
 import { Op } from './models';
-import { isVIP } from '../schema/authorization';
+import { isAdmin, isVIP } from '../schema/authorization';
 import { WhereAttributeHash } from 'sequelize/types/lib/model';
 
 export interface SignalAPIArguments {
@@ -75,7 +75,10 @@ class SignalAPI extends DataSource {
   }
 
   async getSignals(): Promise<SignalModel[]> {
-    if(isVIP(this.context.getUser())) {
+    if(isAdmin(this.context.getUser())) {
+      console.log('return all signals')
+      return this.store.Signal.findAll();
+    } else {
       const date = new Date();
       const MS_IN_A_MIN = 60000
       const MS_IN_A_HOUR = 60 * MS_IN_A_MIN;
@@ -92,9 +95,6 @@ class SignalAPI extends DataSource {
       }
       console.log('return vip signals')
       return this.store.Signal.findAll(vipSignals);
-    } else {
-      console.log('return all signals')
-      return this.store.Signal.findAll();
     }
   }
 

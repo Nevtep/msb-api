@@ -92,8 +92,6 @@ const resolverMap: IResolvers = {
       return { user }
     },
     signup: async (parent, { fullName, email, password, token }, context) => {
-        console.log('secretToken: ', secretKey);
-        console.log('tpken: ', token);
         const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
         const verification =  await fetch(verificationUrl);
           // Stop process for any errors
@@ -103,8 +101,7 @@ const resolverMap: IResolvers = {
         // Destructure body object
         // Check the reCAPTCHA v3 documentation for more information
         const { success, score } = await verification.json();
-        console.log('reCaptcha answer: %o', verification)
-        console.log('test: %o', { success, score })
+
         // reCAPTCHA validation
         if (!success || score < 0.4) {
           throw new Error(`Sending failed. Robots aren't allowed here.`);
@@ -133,7 +130,6 @@ const resolverMap: IResolvers = {
       if(context.isUnauthenticated()) {
         throw new Error('You need to login to subscribe')
       }
-      console.log('about to confirm')
       // rate limit with a queue
       const user = context.getUser();
       const idHash = crypto.createHash('sha512').update(user.id).digest('hex');
@@ -143,7 +139,6 @@ const resolverMap: IResolvers = {
       }
       try {
         const plan =  await dataSources.plansAPI.findOne({amount: parseInt(order.amount.value)});
-        console.log('selected plan duration: %o', plan.duration)
         const role = await dataSources.rolesAPI.findOne({ name: plan.role });
         const service: Partial<ServiceModel> = {
           name: plan.role,
@@ -177,7 +172,6 @@ const resolverMap: IResolvers = {
           UserId: userId,
           paymentRef: `user:${user.id}`
         }
-        console.log('insert', service)
         const dbService = await dataSources.serviceAPI.addService(service);
         const updated = await dataSources.usersAPI.findOne({ id: userId });
         // user.subscriptions.push(dbService);
@@ -206,7 +200,6 @@ const resolverMap: IResolvers = {
       }
       // rate limit with a queue
       const authenticatedUser = context.getUser();
-      console.log('user', authenticatedUser)
       if(isAdmin(authenticatedUser)) {
         const values = {
           id: uuid(),
@@ -277,7 +270,6 @@ const resolverMap: IResolvers = {
           file.createReadStream() // is a readable node stream that contains the contents of the uploaded file
             .pipe(csv())
             .on('data', (signal) => {
-              console.log('signal: %o', signal)
               const time = Date.parse(signal.time);
               const { pair, op } = signal;
               results.push(dataSources.signalsAPI.addSignal({
@@ -287,7 +279,6 @@ const resolverMap: IResolvers = {
               }));
             })
             .on('end', () => {
-              console.log(results);
               return results;
             }); 
           //node stream api: https://nodejs.org/api/stream.html
@@ -340,7 +331,6 @@ const resolverMap: IResolvers = {
       }
     },
     sendMessage: async (parent, message, context) => {
-      console.log(context.getUser());
       if(context.isUnauthenticated()) {
         throw new Error('You need to login to send messages')
       }
@@ -350,7 +340,6 @@ const resolverMap: IResolvers = {
 
     },
     sendSignal: async (parent, message, context) => {
-      console.log(context.getUser());
       if(context.isUnauthenticated()) {
         throw new Error('You need to login to send messages')
       }

@@ -18,7 +18,6 @@ export const isAdmin = (user: UserModel) => {
         subscription.startDate < new Date() &&
         subscription.name === 'ADMIN'
     ));
-    console.log('activeService', activeService)
     return !!activeService && activeService?.length > 0;
 };
 
@@ -37,6 +36,5 @@ export const isVIP = (user: UserModel) => {
         subscription.startDate < new Date() &&
         subscription.name === 'VIP'
     ));
-    console.log('activeService', activeService)
     return !!activeService && activeService?.length > 0;
 };

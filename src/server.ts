@@ -48,7 +48,6 @@ passport.use(
       }
       bcrypt.compare(password, user.dataValues.password, (err, match) => {
         if(err) {
-          console.log('error: %o', err);
           return done(err);
         }
         if(match) {
@@ -119,7 +118,6 @@ passport.serializeUser((user: UserModel, done) => {
 });
   
 passport.deserializeUser((email, done) => {
-  console.log('email', email)
   getDataSources().usersAPI.findOne({ email: email as string }).then(user => {
     done(null, user);
   });
