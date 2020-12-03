@@ -14,12 +14,14 @@ import DateType from './GraphQLDate';
 import moment from 'moment';
 import { OrderDetail } from '../datasources/Orders';
 import DurationType from './GraphQLDuration';
+import fetch from 'node-fetch';
 
 const VIP_SIGNAL = 'VIP_SIGNAL';
 const VIP_MESSAGE = 'VIP_MESSAGE';
 // const MS_IN_A_MIN = 60000
 const pubsub = new PubSub();
 // const signalsAPI = new SignalAPI({ store });
+const secretKey = process.env.RECAPTCHA_SECRET_KEY
 
 const resolverMap: IResolvers = {
   Date: DateType,
@@ -89,7 +91,24 @@ const resolverMap: IResolvers = {
       await context.login(user);
       return { user }
     },
-    signup: async (parent, { fullName, email, password }, context) => {
+    signup: async (parent, { fullName, email, password, token }, context) => {
+        console.log('secretToken: ', secretKey);
+        console.log('tpken: ', token);
+        const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
+        const verification =  await fetch(verificationUrl);
+          // Stop process for any errors
+        if (!verification.ok) {
+          throw new Error('reCaptcha validation failed.');
+        }
+        // Destructure body object
+        // Check the reCAPTCHA v3 documentation for more information
+        const { success, score } = await verification.json();
+        console.log('reCaptcha answer: %o', verification)
+        console.log('test: %o', { success, score })
+        // reCAPTCHA validation
+        if (!success || score < 0.4) {
+          throw new Error(`Sending failed. Robots aren't allowed here.`);
+        }
         const existingUsers = await context.dataSources.usersAPI.getUsers();
         const userWithEmailAlreadyExists = !!existingUsers.find((user: any) => user.dataValues.email === email);
   

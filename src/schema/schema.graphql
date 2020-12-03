@@ -63,7 +63,7 @@
   type Mutation {
     logout: Boolean
     login(email: String!, password: String!): AuthPayload
-    signup(fullName: String!, email: String!, password: String!): AuthPayload
+    signup(fullName: String!, email: String!, password: String!, token: String!): AuthPayload
     confirmSubscription(purchaseId: String!): User
     addRole(name: String, userId: ID, startDate: Date, endDate: Date): User
     removeRole(id: ID): ID
