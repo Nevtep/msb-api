@@ -188,7 +188,11 @@ const resolverMap: IResolvers = {
       // rate limit with a queue
       const user = context.getUser();
       if(isAdmin(user)) {
-        return await dataSources.serviceAPI.removeService(service.id);
+        const dbService = await dataSources.serviceAPI.findOne(service);
+        await dataSources.serviceAPI.removeService(service.id);
+        const updated = await dataSources.usersAPI.findOne({ id: dbService.UserId });
+        // user.subscriptions.push(dbService);
+        return updated;
       } else {
         throw new Error('DO NOT FUCK WITH US')
       }
